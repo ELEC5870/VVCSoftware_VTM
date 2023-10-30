@@ -85,9 +85,19 @@ endif()
 bb_enable_warnings( msvc warnings-as-errors "/wd4996" )
 
 # enable sse4.1 build for all source files for gcc and clang
-if( UNIX OR MINGW )
-  add_compile_options( "-msse4.1" )
-endif()
+include( CheckCXXCompilerFlag )
+CHECK_CXX_COMPILER_FLAG( -msse4.1 COMPILER_SUPPORTS_MSSE4_1 )
+CHECK_CXX_COMPILER_FLAG( -msse4.2 COMPILER_SUPPORTS_MSSE4_2 )
+CHECK_CXX_COMPILER_FLAG( -mavx COMPILER_SUPPORTS_MAVX )
+CHECK_CXX_COMPILER_FLAG( -mavx2 COMPILER_SUPPORTS_MAVX2 )
+CHECK_CXX_COMPILER_FLAG( /arch:AVX COMPILER_SUPPORTS_ARCH_AVX )
+CHECK_CXX_COMPILER_FLAG( /arch:AVX2 COMPILER_SUPPORTS_ARCH_AVX2 )
+
+# smmintrin.h should only exist if the target CPU supports SSE4.1
+include( CheckIncludeFile )
+CHECK_INCLUDE_FILE( smmintrin.h HAVE_SMMINTRIN_H ) # SSE4.1
+CHECK_INCLUDE_FILE( nmmintrin.h HAVE_NMMINTRIN_H ) # SSE4.2
+CHECK_INCLUDE_FILE( immintrin.h HAVE_IMMINTRIN_H ) # AVX
 
 # enable parallel build for Visual Studio
 if( MSVC )

@@ -38,7 +38,25 @@ file( GLOB MD5_INC_FILES "../libmd5/*.h" )
 
 
 # get all source files
-set( SRC_FILES ${BASE_SRC_FILES} ${X86_SRC_FILES} ${SSE41_SRC_FILES} ${SSE42_SRC_FILES} ${AVX_SRC_FILES} ${AVX2_SRC_FILES} ${MD5_SRC_FILES} )
+set( SRC_FILES ${BASE_SRC_FILES} ${X86_SRC_FILES} ${MD5_SRC_FILES} )
+if ( HAVE_SMMINTRIN_H )
+  if ( COMPILER_SUPPORTS_MSSE4_1 )
+    set( SRC_FILES ${SRC_FILES} ${SSE41_SRC_FILES} )
+  endif()
+endif()
+if ( HAVE_NMMINTRIN_H )
+  if ( COMPILER_SUPPORTS_MSSE4_2 )
+    set( SRC_FILES ${SRC_FILES} ${SSE42_SRC_FILES} )
+  endif()
+endif()
+if ( HAVE_IMMINTRIN_H)
+  if ( COMPILER_SUPPORTS_MAVX )
+    set( SRC_FILES ${SRC_FILES} ${AVX_SRC_FILES} )
+  endif()
+  if ( COMPILER_SUPPORTS_MAVX2 )
+    set( SRC_FILES ${SRC_FILES} ${AVX2_SRC_FILES} )
+  endif()
+endif()
 
 # get all include files
 set( INC_FILES ${BASE_INC_FILES} ${X86_INC_FILES} ${MD5_INC_FILES} )
