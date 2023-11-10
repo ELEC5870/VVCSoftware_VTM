@@ -413,6 +413,7 @@ protected:
   int       m_mergeRdCandQuotaCiip;
   int       m_mergeRdCandQuotaGpm;
   bool      m_usePbIntraFast;
+  bool      m_doExhaustiveIntraSearch;
   bool      m_useAMaxBT;
   bool      m_e0023FastEnc;
   bool      m_contentBasedFastQtbt;
@@ -1588,6 +1589,8 @@ public:
   int       getMergeRdCandQuotaGpm          () const         { return m_mergeRdCandQuotaGpm;}
   void      setUsePbIntraFast               ( bool  n )      { m_usePbIntraFast = n; }
   bool      getUsePbIntraFast               () const         { return m_usePbIntraFast; }
+  void      setDoExhaustiveIntraSearch      ( bool  n )      { m_doExhaustiveIntraSearch = n; }
+  bool      getDoExhaustiveIntraSearch      () const         { return m_doExhaustiveIntraSearch; }
   void      setUseAMaxBT                    ( bool  n )      { m_useAMaxBT = n; }
   bool      getUseAMaxBT                    () const         { return m_useAMaxBT; }
 

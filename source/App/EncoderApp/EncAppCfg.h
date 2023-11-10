@@ -424,6 +424,7 @@ protected:
   bool      m_useMttSkip;
   bool      m_useFastLCTU;
   bool      m_usePbIntraFast;
+  bool      m_doExhaustiveIntraSearch;
   bool      m_useAMaxBT;
   bool      m_useFastMrg;
   int       m_maxMergeRdCandNumTotal;

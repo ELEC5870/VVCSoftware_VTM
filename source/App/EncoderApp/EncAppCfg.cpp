@@ -1085,6 +1085,7 @@ bool EncAppCfg::parseCfg( int argc, char* argv[] )
   ("MergeRdCandQuotaCiip",                            m_mergeRdCandQuotaCiip,                               1, "Quota of CIIP merge candidates in full RD checking")
   ("MergeRdCandQuotaGpm",                             m_mergeRdCandQuotaGpm,        GEO_MAX_TRY_WEIGHTED_SATD, "Quota of GPM merge candidates in full RD checking")
   ("PBIntraFast",                                     m_usePbIntraFast,                                 false, "Fast assertion if the intra mode is probable")
+  ("DoExhaustiveIntraSearch",                         m_doExhaustiveIntraSearch,                        false, "Search every possible intra prediction mode")
   ("AMaxBT",                                          m_useAMaxBT,                                      false, "Adaptive maximal BT-size")
   ("E0023FastEnc",                                    m_e0023FastEnc,                                    true, "Fast encoding setting for QTBT (proposal E0023)")
   ("MTTSkipping",                                     m_useMttSkip,                                     false, "MTT split modes early termination")
@@ -5582,6 +5583,7 @@ void EncAppCfg::xPrintParameter()
   msg( VERBOSE, "MergeRdCandQuotaSubBlk:%d MergeRdCandQuotaCiip:%d MergeRdCandQuotaGpm:%d ",
     m_mergeRdCandQuotaSubBlk, m_mergeRdCandQuotaCiip, m_mergeRdCandQuotaGpm);
   msg( VERBOSE, "PBIntraFast:%d ", m_usePbIntraFast );
+  msg( VERBOSE, "DoExhaustiveIntraSearch:%d ", m_doExhaustiveIntraSearch );
   if( m_ImvMode ) msg( VERBOSE, "IMV4PelFast:%d ", m_Imv4PelFast );
   if (m_mtsMode)
   {

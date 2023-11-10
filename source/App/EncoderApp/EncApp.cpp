@@ -836,6 +836,7 @@ void EncApp::xInitLibCfg( int layerIdx )
   m_cEncLib.setMergeRdCandQuotaCiip                              ( m_mergeRdCandQuotaCiip );
   m_cEncLib.setMergeRdCandQuotaGpm                               ( m_mergeRdCandQuotaGpm );
   m_cEncLib.setUsePbIntraFast                                    ( m_usePbIntraFast );
+  m_cEncLib.setDoExhaustiveIntraSearch                           ( m_doExhaustiveIntraSearch );
   m_cEncLib.setUseAMaxBT                                         ( m_useAMaxBT );
   m_cEncLib.setUseE0023FastEnc                                   ( m_e0023FastEnc );
   m_cEncLib.setUseContentBasedFastQtbt                           ( m_contentBasedFastQtbt );
