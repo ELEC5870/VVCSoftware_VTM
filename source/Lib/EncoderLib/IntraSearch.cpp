@@ -1312,11 +1312,30 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
       unsigned mpm_pred[NUM_MOST_PROBABLE_MODES];
       PU::getIntraMPMs( pu, mpm_pred );
 
-      DTRACE(g_trace_ctx, D_INTRA_COST, "IntraCost T [x=%d,y=%d,w=%d,h=%d] %f (%d,%d,%d,%d,%d,%d,[%d,%d,%d,%d,%d,%d]) \n",
-             cu.blocks[COMPONENT_Y].x, cu.blocks[COMPONENT_Y].y, width, height,
-             csTemp->cost,
-             orgMode.modeId, orgMode.ispMod, pu.multiRefIdx, cu.mipFlag, cu.lfnstIdx, cu.mtsFlag,
-             mpm_pred[0], mpm_pred[1], mpm_pred[2], mpm_pred[3], mpm_pred[4], mpm_pred[5]);
+      std::stringstream os;
+      os << "IntraCost T "
+            "x=" << cu.blocks[COMPONENT_Y].x << ","
+            "y=" << cu.blocks[COMPONENT_Y].y << ","
+            "w=" << width << ","
+            "h=" << height << ","
+            "cost=" << csTemp->cost << ","
+            "dist=" << csTemp->dist << ","
+            "fracBits=" << csTemp->fracBits << ","
+            "lambda=" << m_pcRdCost->getLambda() << ","
+            "modeId=" << orgMode.modeId << ","
+            "ispMod=" << (int8_t) orgMode.ispMod << ","
+            "multiRefIdx=" << pu.multiRefIdx << ","
+            "mipFlag=" << cu.mipFlag << ","
+            "lfnstIdx=" << cu.lfnstIdx << ","
+            "mtsFlag=" << cu.mtsFlag << ","
+            "mpm_pred0=" << mpm_pred[0] << ","
+            "mpm_pred1=" << mpm_pred[1] << ","
+            "mpm_pred2=" << mpm_pred[2] << ","
+            "mpm_pred3=" << mpm_pred[3] << ","
+            "mpm_pred4=" << mpm_pred[4] << ","
+            "mpm_pred5=" << mpm_pred[5] << "\n";
+      auto str = os.str();
+      DTRACE(g_trace_ctx, D_INTRA_COST, str.c_str());
 
       if( tmpValidReturn )
       {
