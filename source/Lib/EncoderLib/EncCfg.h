@@ -414,6 +414,8 @@ protected:
   int       m_mergeRdCandQuotaGpm;
   bool      m_usePbIntraFast;
   bool      m_doExhaustiveIntraSearch;
+  bool      m_doNeuralIntraModeDecision;
+  std::string m_neuralIntraModeDecisionModel;
   bool      m_useAMaxBT;
   bool      m_e0023FastEnc;
   bool      m_contentBasedFastQtbt;
@@ -1591,6 +1593,10 @@ public:
   bool      getUsePbIntraFast               () const         { return m_usePbIntraFast; }
   void      setDoExhaustiveIntraSearch      ( bool  n )      { m_doExhaustiveIntraSearch = n; }
   bool      getDoExhaustiveIntraSearch      () const         { return m_doExhaustiveIntraSearch; }
+  void      setDoNeuralIntraModeDecision    ( bool  n )      { m_doNeuralIntraModeDecision = n; }
+  bool      getDoNeuralIntraModeDecision    () const         { return m_doNeuralIntraModeDecision; }
+  void      setNeuralIntraModeDecisionModel ( std::string n ) { m_neuralIntraModeDecisionModel = n; }
+  std::string getNeuralIntraModeDecisionModel () const       { return m_neuralIntraModeDecisionModel; }
   void      setUseAMaxBT                    ( bool  n )      { m_useAMaxBT = n; }
   bool      getUseAMaxBT                    () const         { return m_useAMaxBT; }
 

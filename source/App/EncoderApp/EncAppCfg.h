@@ -425,6 +425,8 @@ protected:
   bool      m_useFastLCTU;
   bool      m_usePbIntraFast;
   bool      m_doExhaustiveIntraSearch;
+  bool      m_doNeuralIntraModeDecision;
+  std::string m_neuralIntraModeDecisionModel;
   bool      m_useAMaxBT;
   bool      m_useFastMrg;
   int       m_maxMergeRdCandNumTotal;
