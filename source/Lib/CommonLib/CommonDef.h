@@ -45,6 +45,13 @@
 #include <cstdlib>
 #include <cstdint>
 
+// @NOTE: This must be included here rather than in source files as
+//        needed because torch exports a macro CHECK, which must be
+//        defined before VTM's CHECK in the translation unit to allow
+//        it to be overwritten.  Stupid hack, they shouldn't export
+//        a symbol with such a generic name.
+#include <torch/script.h>
+
 #if GREEN_METADATA_SEI_ENABLED
 #include <fstream>
 #endif

@@ -39,7 +39,6 @@
 #define __INTRASEARCH__
 
 // Include files
-
 #include "CABACWriter.h"
 #include "EncCfg.h"
 
@@ -48,6 +47,8 @@
 #include "CommonLib/Unit.h"
 #include "CommonLib/RdCost.h"
 #include "EncReshape.h"
+
+#include <torch/script.h>
 
 //! \ingroup EncoderLib
 //! \{
@@ -396,6 +397,8 @@ protected:
   // RD computation
   CABACWriter*    m_CABACEstimator;
   CtxPool        *m_ctxPool;
+
+  torch::jit::script::Module m_neuralIntraModeDecisionModel;
 
   bool            m_isInitialized;
   bool            m_bestEscape;

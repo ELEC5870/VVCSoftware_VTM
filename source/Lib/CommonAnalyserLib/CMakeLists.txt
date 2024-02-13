@@ -94,6 +94,10 @@ endif()
 target_include_directories( ${LIB_NAME} PUBLIC ../CommonLib/. ../CommonLib/.. ../CommonLib/x86 ../libmd5 )
 target_link_libraries( ${LIB_NAME} )
 
+find_package(Torch REQUIRED)
+target_link_libraries(${LIB_NAME} PUBLIC "${TORCH_LIBRARIES}")
+target_include_directories(${LIB_NAME} PUBLIC "${TORCH_INCLUDE_DIRS}")
+
 # set needed compile definitions
 set_property( SOURCE ${SSE41_SRC_FILES} APPEND PROPERTY COMPILE_DEFINITIONS USE_SSE41 )
 set_property( SOURCE ${SSE42_SRC_FILES} APPEND PROPERTY COMPILE_DEFINITIONS USE_SSE42 )

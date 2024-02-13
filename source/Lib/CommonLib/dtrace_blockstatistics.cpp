@@ -920,7 +920,6 @@ void writeAllData(const CodingStructure& cs, const UnitArea& ctuArea)
                   const uint32_t chFinalMode = PU::getFinalIntraMode(pu, ChannelType(chType));
                   DTRACE_BLOCK_SCALAR_CHROMA(g_trace_ctx, D_BLOCK_STATISTICS_ALL, pu,
                                              GetBlockStatisticName(BlockStatistic::Chroma_IntraMode), chFinalMode);
-                  assert(0);
                 }
               }
             }

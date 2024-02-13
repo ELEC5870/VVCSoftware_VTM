@@ -49,6 +49,8 @@
 
 #include <math.h>
 #include <limits>
+
+#include <torch/script.h>
  //! \ingroup EncoderLib
  //! \{
 #define PLTCtx(c) SubCtx( Ctx::Palette, c )
@@ -210,6 +212,18 @@ void IntraSearch::init(EncCfg *pcEncCfg, TrQuant *pcTrQuant, RdCost *pcRdCost, C
   IntraPrediction::init(cform, pcEncCfg->getBitDepth(ChannelType::LUMA));
   m_tmpStorageCtu.create(UnitArea(cform, Area(0, 0, maxCUWidth, maxCUHeight)));
   m_colorTransResiBuf.create(UnitArea(cform, Area(0, 0, maxCUWidth, maxCUHeight)));
+  if (m_pcEncCfg->getDoNeuralIntraModeDecision())
+  {
+    try
+    {
+      m_neuralIntraModeDecisionModel =
+        torch::jit::load(m_pcEncCfg->getNeuralIntraModeDecisionModel());
+    } catch (const std::exception &e) {
+      THROW("Error loading neural network model");
+    }
+    m_neuralIntraModeDecisionModel.eval();
+  }
+
 
   for( uint32_t ch = 0; ch < MAX_NUM_TBLOCKS; ch++ )
   {
@@ -561,8 +575,69 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
   bool testISP        = ispCanBeUsed && (!colorTransformIsEnabled || !cu.colorTransform);
   bool validReturn = false;
 
+  auto &pu = *cu.firstPU;
+  CHECK(pu.cu != &cu, "PU is not contained in the CU");
+
   if (m_pcEncCfg->getDoNeuralIntraModeDecision()) {
-    THROW("Neural intra mode decision not implemented.");
+    const CompArea &area = pu.Y();
+    const PelBuf piOrg  = cs.getOrgBuf(area);
+
+    // @NOTE: Check if stride should be on dimension 2 or 3
+    at::Tensor x_image = torch::from_blob(piOrg.buf, {1, 1, height, width}, {1, 1, piOrg.stride, 1}, torch::kInt16);
+    x_image = x_image.to(torch::kFloat32);
+
+    unsigned mpm_pred[NUM_MOST_PROBABLE_MODES];
+    PU::getIntraMPMs( pu, mpm_pred );
+
+    // @TODO: Use actual values here.  Half of these should probably not be
+    //        predictors in the first place to be honest.
+    int x_scalars_arr[] = {
+      -1,                             // isp_mode
+      0,                              // multi_ref_idx
+      false,                          // mip_flag
+      0,                              // lfnst_idx
+      0,                              // mts_flag
+      static_cast<int>(mpm_pred[0]),  // mpm0
+      static_cast<int>(mpm_pred[1]),  // mpm1
+      static_cast<int>(mpm_pred[2]),  // mpm2
+      static_cast<int>(mpm_pred[3]),  // mpm3
+      static_cast<int>(mpm_pred[4]),  // mpm4
+      static_cast<int>(mpm_pred[5]),  // mpm5
+    };
+    auto x_scalars_options = torch::TensorOptions().dtype(torch::kInt32);
+    auto x_scalars = torch::from_blob(x_scalars_arr, {1, 11}, x_scalars_options);
+
+    // Normalise the input coding block
+    const auto mean = x_image.mean();
+    const auto std = x_image.std();
+    x_image -= mean;
+    if (std.item<float>() != 0)
+      x_image /= std;
+
+    at::Tensor prediction = m_neuralIntraModeDecisionModel.forward({x_image, x_scalars}).toTensor();
+
+    int mode = prediction.argmax().item<int>();
+    ModeInfo orgMode;
+    orgMode.modeId = mode;
+
+    CodingStructure *csTemp = m_pTempCS[gp_sizeIdxInfo->idxFrom( cu.lwidth() )][gp_sizeIdxInfo->idxFrom( cu.lheight() )];
+    csTemp->slice = cs.slice;
+    csTemp->initStructData();
+    csTemp->picture = cs.picture;
+    m_CABACEstimator->getCtx() = ctxStart;
+    cs.initSubStructure( *csTemp, partitioner.chType, cs.area, true );
+    validReturn = xRecurIntraCodingLumaQT(*csTemp, partitioner, mtsCheckRangeFlag, mtsFirstCheckId, mtsLastCheckId, moreProbMTSIdxFirst);
+
+    if (validReturn) {
+      cs.useSubStructure(*csTemp, partitioner.chType, pu.singleChan(ChannelType::LUMA), true, true,
+                         KEEP_PRED_AND_RESI_SIGNALS, KEEP_PRED_AND_RESI_SIGNALS, true);
+      cu.ispMode = orgMode.ispMod;
+      cu.mipFlag = orgMode.mipFlg;
+      pu.mipTransposedFlag = orgMode.mipTrFlg;
+      pu.multiRefIdx = orgMode.mRefId;
+      pu.intraDir[ChannelType::LUMA] = orgMode.modeId;
+    }
+    csTemp->releaseIntermediateData();
   } else {
     if ( saveDataForISP )
     {
@@ -591,7 +666,6 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
     static_vector<double, FAST_UDI_MAX_RDMODE_NUM>   candCostList;
     static_vector<double, FAST_UDI_MAX_RDMODE_NUM>   candHadList;
 
-    auto &pu = *cu.firstPU;
 #if GDR_ENABLED
     const bool isEncodeGdrClean = cs.sps->getGDREnabledFlag() && cs.pcv->isEncoder && cs.picture->gdrParam.inGdrInterval
                                   && cs.isClean(pu.Y().topRight(), ChannelType::LUMA);
@@ -600,8 +674,6 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
       candHadList.clear();
       candCostList.clear();
       hadModeList.clear();
-
-      CHECK(pu.cu != &cu, "PU is not contained in the CU");
 
       //===== determine set of modes to be tested (using prediction signal only) =====
 

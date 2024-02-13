@@ -16,10 +16,6 @@ endif()
 add_library( ${LIB_NAME} STATIC ${SRC_FILES} ${INC_FILES} ${NATVIS_FILES} )
 target_compile_definitions( ${LIB_NAME} PUBLIC )
 
-find_package(Torch REQUIRED)
-target_link_libraries(${LIB_NAME} "${TORCH_LIBRARIES}")
-target_include_directories(${LIB_NAME} PRIVATE "${TORCH_INCLUDE_DIRS}")
-
 if( EXTENSION_360_VIDEO )
   target_compile_definitions( ${LIB_NAME} PUBLIC EXTENSION_360_VIDEO=1 )
 endif()
