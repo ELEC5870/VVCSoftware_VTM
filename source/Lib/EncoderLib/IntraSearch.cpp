@@ -51,6 +51,8 @@
 #include <limits>
 
 #include <torch/script.h>
+#include <torch/cuda.h>
+#include <torch/mps.h>
  //! \ingroup EncoderLib
  //! \{
 #define PLTCtx(c) SubCtx( Ctx::Palette, c )
@@ -214,6 +216,14 @@ void IntraSearch::init(EncCfg *pcEncCfg, TrQuant *pcTrQuant, RdCost *pcRdCost, C
   m_colorTransResiBuf.create(UnitArea(cform, Area(0, 0, maxCUWidth, maxCUHeight)));
   if (m_pcEncCfg->getDoNeuralIntraModeDecision())
   {
+    if (torch::cuda::is_available()) {
+      m_neuralIntraModeDecisionDevice = torch::kCUDA;
+    } else if (torch::mps::is_available()) {
+      m_neuralIntraModeDecisionDevice = torch::kMPS;
+    } else {
+      m_neuralIntraModeDecisionDevice = torch::kCPU;
+    }
+
     try
     {
       m_neuralIntraModeDecisionModel =
@@ -221,6 +231,7 @@ void IntraSearch::init(EncCfg *pcEncCfg, TrQuant *pcTrQuant, RdCost *pcRdCost, C
     } catch (const std::exception &e) {
       THROW("Error loading neural network model");
     }
+    m_neuralIntraModeDecisionModel.to(m_neuralIntraModeDecisionDevice);
     m_neuralIntraModeDecisionModel.eval();
   }
 
@@ -584,7 +595,7 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
 
     // @NOTE: Check if stride should be on dimension 2 or 3
     at::Tensor x_image = torch::from_blob(piOrg.buf, {1, 1, height, width}, {1, 1, piOrg.stride, 1}, torch::kInt16);
-    x_image = x_image.to(torch::kFloat32);
+    x_image = x_image.to(torch::kFloat32).to(m_neuralIntraModeDecisionDevice);
 
     unsigned mpm_pred[NUM_MOST_PROBABLE_MODES];
     PU::getIntraMPMs( pu, mpm_pred );
@@ -605,7 +616,7 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
       static_cast<int>(mpm_pred[5]),  // mpm5
     };
     auto x_scalars_options = torch::TensorOptions().dtype(torch::kInt32);
-    auto x_scalars = torch::from_blob(x_scalars_arr, {1, 11}, x_scalars_options);
+    auto x_scalars = torch::from_blob(x_scalars_arr, {1, 11}, x_scalars_options).to(m_neuralIntraModeDecisionDevice);
 
     // Normalise the input coding block
     const auto mean = x_image.mean();

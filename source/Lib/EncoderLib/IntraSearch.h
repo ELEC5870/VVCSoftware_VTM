@@ -399,6 +399,7 @@ protected:
   CtxPool        *m_ctxPool;
 
   torch::jit::script::Module m_neuralIntraModeDecisionModel;
+  torch::DeviceType          m_neuralIntraModeDecisionDevice;
 
   bool            m_isInitialized;
   bool            m_bestEscape;
