@@ -233,6 +233,7 @@ void IntraSearch::init(EncCfg *pcEncCfg, TrQuant *pcTrQuant, RdCost *pcRdCost, C
     }
     m_neuralIntraModeDecisionModel.to(m_neuralIntraModeDecisionDevice);
     m_neuralIntraModeDecisionModel.eval();
+    torch::autograd::GradMode::set_enabled(false);
   }
 
 
