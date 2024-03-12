@@ -603,22 +603,22 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
 
     // @TODO: Use actual values here.  Half of these should probably not be
     //        predictors in the first place to be honest.
-    float x_scalars_arr[] = {
+    float x_scalars_arr[6 + NUM_LUMA_MODE] = {
       static_cast<float>(m_pcRdCost->getLambda()),  // lambda
       -1,                                           // isp_mode
       0,                                            // multi_ref_idx
       false,                                        // mip_flag
       0,                                            // lfnst_idx
       0,                                            // mts_flag
-      static_cast<float>(mpm_pred[0]),              // mpm0
-      static_cast<float>(mpm_pred[1]),              // mpm1
-      static_cast<float>(mpm_pred[2]),              // mpm2
-      static_cast<float>(mpm_pred[3]),              // mpm3
-      static_cast<float>(mpm_pred[4]),              // mpm4
-      static_cast<float>(mpm_pred[5]),              // mpm5
     };
+    for (size_t i = 6; i < 6 + NUM_LUMA_MODE; i++) {
+      x_scalars_arr[i] = 0;
+    }
+    for (size_t i = 0; i < NUM_MOST_PROBABLE_MODES; i++) {
+      x_scalars_arr[6 + mpm_pred[i]] = NUM_MOST_PROBABLE_MODES - i;
+    }
     auto x_scalars_options = torch::TensorOptions().dtype(torch::kFloat32);
-    auto x_scalars = torch::from_blob(x_scalars_arr, {1, 12}, x_scalars_options).to(m_neuralIntraModeDecisionDevice);
+    auto x_scalars = torch::from_blob(x_scalars_arr, {1, 6 + NUM_LUMA_MODE}, x_scalars_options).to(m_neuralIntraModeDecisionDevice);
 
     // Normalise the input coding block
     const auto mean = x_image.mean();
