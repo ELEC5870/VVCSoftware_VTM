@@ -596,14 +596,17 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
 
     // @NOTE: Check if stride should be on dimension 2 or 3
     at::Tensor x_image = torch::from_blob(piOrg.buf, {1, 1, height, width}, {1, 1, piOrg.stride, 1}, torch::kInt16);
-    x_image = x_image.to(torch::kFloat32).to(m_neuralIntraModeDecisionDevice);
+    x_image = x_image.to(m_neuralIntraModeDecisionDevice).to(torch::kFloat32);
 
     unsigned mpm_pred[NUM_MOST_PROBABLE_MODES];
     PU::getIntraMPMs( pu, mpm_pred );
 
     // @TODO: Use actual values here.  Half of these should probably not be
     //        predictors in the first place to be honest.
-    float x_scalars_arr[6 + NUM_LUMA_MODE] = {
+    constexpr size_t num_scalars = 8 + NUM_LUMA_MODE;
+    float x_scalars_arr[num_scalars] = {
+      static_cast<float>(width),
+      static_cast<float>(height),
       static_cast<float>(m_pcRdCost->getLambda()),  // lambda
       -1,                                           // isp_mode
       0,                                            // multi_ref_idx
@@ -611,14 +614,14 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
       0,                                            // lfnst_idx
       0,                                            // mts_flag
     };
-    for (size_t i = 6; i < 6 + NUM_LUMA_MODE; i++) {
+    for (size_t i = num_scalars - NUM_LUMA_MODE; i < num_scalars; i++) {
       x_scalars_arr[i] = 0;
     }
     for (size_t i = 0; i < NUM_MOST_PROBABLE_MODES; i++) {
-      x_scalars_arr[6 + mpm_pred[i]] = NUM_MOST_PROBABLE_MODES - i;
+      x_scalars_arr[num_scalars - NUM_LUMA_MODE + mpm_pred[i]] = NUM_MOST_PROBABLE_MODES - i;
     }
     auto x_scalars_options = torch::TensorOptions().dtype(torch::kFloat32);
-    auto x_scalars = torch::from_blob(x_scalars_arr, {1, 6 + NUM_LUMA_MODE}, x_scalars_options).to(m_neuralIntraModeDecisionDevice);
+    auto x_scalars = torch::from_blob(x_scalars_arr, {1, num_scalars}, x_scalars_options).to(m_neuralIntraModeDecisionDevice);
 
     // Normalise the input coding block
     const auto mean = x_image.mean();
@@ -632,6 +635,12 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
     int mode = prediction.argmax().item<int>();
     ModeInfo orgMode;
     orgMode.modeId = mode;
+    orgMode.mipFlg = false;
+    cu.ispMode = orgMode.ispMod;
+    cu.mipFlag = orgMode.mipFlg;
+    pu.mipTransposedFlag = orgMode.mipTrFlg;
+    pu.multiRefIdx = orgMode.mRefId;
+    pu.intraDir[ChannelType::LUMA] = orgMode.modeId;
 
     CodingStructure *csTemp = m_pTempCS[gp_sizeIdxInfo->idxFrom( cu.lwidth() )][gp_sizeIdxInfo->idxFrom( cu.lheight() )];
     csTemp->slice = cs.slice;
@@ -639,16 +648,12 @@ bool IntraSearch::estIntraPredLumaQT(CodingUnit &cu, Partitioner &partitioner, c
     csTemp->picture = cs.picture;
     m_CABACEstimator->getCtx() = ctxStart;
     cs.initSubStructure( *csTemp, partitioner.chType, cs.area, true );
+
     validReturn = xRecurIntraCodingLumaQT(*csTemp, partitioner, mtsCheckRangeFlag, mtsFirstCheckId, mtsLastCheckId, moreProbMTSIdxFirst);
 
     if (validReturn) {
       cs.useSubStructure(*csTemp, partitioner.chType, pu.singleChan(ChannelType::LUMA), true, true,
                          KEEP_PRED_AND_RESI_SIGNALS, KEEP_PRED_AND_RESI_SIGNALS, true);
-      cu.ispMode = orgMode.ispMod;
-      cu.mipFlag = orgMode.mipFlg;
-      pu.mipTransposedFlag = orgMode.mipTrFlg;
-      pu.multiRefIdx = orgMode.mRefId;
-      pu.intraDir[ChannelType::LUMA] = orgMode.modeId;
     }
     csTemp->releaseIntermediateData();
   } else {
